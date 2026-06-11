@@ -1,0 +1,127 @@
+{
+    "remote_metadata": {
+        "protocol": "NEC",
+        "common_chipset": "APA1616",
+        "total_buttons": 24,
+        "static_colors_supported": 16,
+        "input_code_provided": "F720DF (Pure Green)"
+    },
+    "supported_colors": [
+        {
+            "row": 1,
+            "button_name": "Red",
+            "ir_hex_code": "F710EF",
+            "rgb_mix_description": "Pure Red",
+            "hex_color_value": "#FF0000"
+        },
+        {
+            "row": 1,
+            "button_name": "Green",
+            "ir_hex_code": "F720DF",
+            "rgb_mix_description": "Pure Green",
+            "hex_color_value": "#00FF00"
+        },
+        {
+            "row": 1,
+            "button_name": "Blue",
+            "ir_hex_code": "F7609F",
+            "rgb_mix_description": "Pure Blue",
+            "hex_color_value": "#0000FF"
+        },
+        {
+            "row": 1,
+            "button_name": "White",
+            "ir_hex_code": "F7E01F",
+            "rgb_mix_description": "Red + Green + Blue mixed",
+            "hex_color_value": "#FFFFFF"
+        },
+        {
+            "row": 2,
+            "button_name": "Orange",
+            "ir_hex_code": "F730CF",
+            "rgb_mix_description": "High Red + Low Green",
+            "hex_color_value": "#FF5500"
+        },
+        {
+            "row": 2,
+            "button_name": "Light Green",
+            "ir_hex_code": "F7A05F",
+            "rgb_mix_description": "Low Red + High Green",
+            "hex_color_value": "#55FF00"
+        },
+        {
+            "row": 2,
+            "button_name": "Light Blue",
+            "ir_hex_code": "F750AF",
+            "rgb_mix_description": "Low Green + High Blue",
+            "hex_color_value": "#0055FF"
+        },
+        {
+            "row": 2,
+            "button_name": "Warm White",
+            "ir_hex_code": "F7D02F",
+            "rgb_mix_description": "White with a pinkish/yellow tint",
+            "hex_color_value": "#FFE4E1"
+        },
+        {
+            "row": 3,
+            "button_name": "Deep Yellow",
+            "ir_hex_code": "F708F7",
+            "rgb_mix_description": "Red + Medium Green",
+            "hex_color_value": "#FFAA00"
+        },
+        {
+            "row": 3,
+            "button_name": "Cyan",
+            "ir_hex_code": "F78877",
+            "rgb_mix_description": "Medium Green + Medium Blue",
+            "hex_color_value": "#00FFAA"
+        },
+        {
+            "row": 3,
+            "button_name": "Purple",
+            "ir_hex_code": "F748B7",
+            "rgb_mix_description": "High Red + High Blue",
+            "hex_color_value": "#AA00FF"
+        },
+        {
+            "row": 3,
+            "button_name": "Cool White",
+            "ir_hex_code": "F7C837",
+            "rgb_mix_description": "White with a bluish tint",
+            "hex_color_value": "#F0F8FF"
+        },
+        {
+            "row": 4,
+            "button_name": "Yellow",
+            "ir_hex_code": "F728D7",
+            "rgb_mix_description": "Red + Green",
+            "hex_color_value": "#FFFF00"
+        },
+        {
+            "row": 4,
+            "button_name": "Light Cyan",
+            "ir_hex_code": "F7A857",
+            "rgb_mix_description": "Low Green + Medium Blue",
+            "hex_color_value": "#00FFFF"
+        },
+        {
+            "row": 4,
+            "button_name": "Magenta / Pink",
+            "ir_hex_code": "F76897",
+            "rgb_mix_description": "Medium Red + Medium Blue",
+            "hex_color_value": "#FF00FF"
+        },
+        {
+            "row": 4,
+            "button_name": "Baby Blue",
+            "ir_hex_code": "F7E817",
+            "rgb_mix_description": "Very Light Blue/Green mix",
+            "hex_color_value": "#E0FFFF"
+        }
+    ],
+    "hardware_maximum_color_limit": {
+        "hardware_remote_preset_buttons": 16,
+        "strip_hardware_capability_24bit_rgb": 16777216
+    }
+}
