@@ -1,4 +1,4 @@
-package com.irremote.app
+package com.irremote.app.ui.screen
 
 import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +34,6 @@ import com.irremote.app.ir.IRMode
 import com.irremote.app.ir.IRTransmitterFactory
 import com.irremote.app.model.ColorButton
 import com.irremote.app.model.RemoteConfig
-import com.irremote.app.ui.screen.MobileRemoteScreen
-import com.irremote.app.ui.screen.TvRemoteScreen
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
