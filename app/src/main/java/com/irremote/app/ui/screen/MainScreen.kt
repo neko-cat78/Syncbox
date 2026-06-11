@@ -1,6 +1,7 @@
 package com.irremote.app.ui.screen
 
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import com.irremote.app.ir.IRMode
 import com.irremote.app.ir.IRTransmitterFactory
 import com.irremote.app.model.ColorButton
 import com.irremote.app.model.RemoteConfig
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -42,6 +44,7 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     var selectedMode by remember { mutableStateOf(IRMode.JACK_3_5MM) }
+    var irAvailable by remember { mutableStateOf(true) }
 
     val isTv = remember {
         context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
@@ -78,8 +81,27 @@ fun MainScreen(
                 IRMode.entries.forEach { mode ->
                     FilterChip(
                         selected = selectedMode == mode,
-                        onClick = { selectedMode = mode },
+                        onClick = {
+                            selectedMode = mode
+                            irAvailable = IRTransmitterFactory.getTransmitter(mode, context).isAvailable()
+                        },
                         label = { Text(mode.displayName) }
+                    )
+                }
+            }
+
+            if (selectedMode == IRMode.BUILT_IN && !irAvailable) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        "Built-in IR not available. Ensure your device has an IR blaster and the TRANSMIT_IR permission is granted.",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
@@ -89,13 +111,17 @@ fun MainScreen(
             if (isTv) {
                 TvRemoteScreen(
                     buttons = buttons,
-                    onButtonClick = { button -> transmitCode(context, selectedMode, button) },
+                    onButtonClick = { button ->
+                        transmitCode(context, selectedMode, button)
+                    },
                     modifier = Modifier.weight(1f)
                 )
             } else {
                 MobileRemoteScreen(
                     buttons = buttons,
-                    onButtonClick = { button -> transmitCode(context, selectedMode, button) },
+                    onButtonClick = { button ->
+                        transmitCode(context, selectedMode, button)
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -131,5 +157,9 @@ fun MainScreen(
 
 private fun transmitCode(context: android.content.Context, mode: IRMode, button: ColorButton) {
     val transmitter = IRTransmitterFactory.getTransmitter(mode, context)
-    transmitter.transmit(button.irHexCode)
+    try {
+        transmitter.transmit(button.irHexCode)
+    } catch (e: Exception) {
+        Toast.makeText(context, "IR failed: ${e.message}", Toast.LENGTH_SHORT).show()
+    }
 }

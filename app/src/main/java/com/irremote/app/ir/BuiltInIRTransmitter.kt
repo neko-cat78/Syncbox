@@ -2,6 +2,7 @@ package com.irremote.app.ir
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
+import android.util.Log
 
 class BuiltInIRTransmitter(context: Context) : IRTransmitter {
 
@@ -9,11 +10,23 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
         context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
 
     override fun transmit(hexCode: String) {
-        val ir = irManager ?: return
-        if (!ir.hasIrEmitter()) return
+        val ir = irManager
+        if (ir == null) {
+            Log.w("BuiltInIR", "ConsumerIrManager not available")
+            return
+        }
+        if (!ir.hasIrEmitter()) {
+            Log.w("BuiltInIR", "No IR emitter")
+            return
+        }
 
         val pattern = necHexToPattern(hexCode)
-        ir.transmit(38000, pattern)
+        try {
+            ir.transmit(38000, pattern)
+            Log.d("BuiltInIR", "Transmitted: $hexCode -> ${pattern.contentToString()}")
+        } catch (e: Exception) {
+            Log.e("BuiltInIR", "Transmit failed: ${e.message}", e)
+        }
     }
 
     override fun isAvailable(): Boolean {
@@ -27,18 +40,15 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
 
         val bits = mutableListOf<Int>()
 
-        // NEC leader: 9000µs burst, 4500µs space
         bits.add(9000)
         bits.add(4500)
 
-        // 32 bits MSB-first
         for (i in 31 downTo 0) {
             val bit = ((code shr i) and 1L).toInt()
             bits.add(560)
             bits.add(if (bit == 1) 1690 else 560)
         }
 
-        // End burst
         bits.add(560)
 
         return bits.toIntArray()
