@@ -11,11 +11,13 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
     private val carrierFreq: Int
 
     init {
-        val range = irManager?.carrierFrequencyRange
-        carrierFreq = if (range != null && range.start <= 38000 && range.end >= 38000) {
-            38000
-        } else if (range != null) {
-            (range.start + range.end) / 2
+        val ranges = irManager?.carrierFrequencyRange
+        carrierFreq = if (!ranges.isNullOrEmpty()) {
+            val r = ranges.first()
+            val minFreq = r.minFrequency
+            val maxFreq = r.maxFrequency
+            if (minFreq <= 38000 && maxFreq >= 38000) 38000
+            else (minFreq + maxFreq) / 2
         } else {
             38000
         }
