@@ -8,13 +8,25 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
     private val irManager: ConsumerIrManager? =
         context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
 
+    private val carrierFreq: Int
+
+    init {
+        val range = irManager?.carrierFrequencyRange
+        carrierFreq = if (range != null && range.start <= 38000 && range.end >= 38000) {
+            38000
+        } else if (range != null) {
+            (range.start + range.end) / 2
+        } else {
+            38000
+        }
+    }
+
     override fun transmit(hexCode: String) {
         val ir = irManager ?: return
         if (!ir.hasIrEmitter()) return
 
-        val freq = 38000
         val pattern = necHexToPattern(hexCode)
-        ir.transmit(freq, pattern)
+        ir.transmit(carrierFreq, pattern)
     }
 
     override fun isAvailable(): Boolean {
@@ -23,25 +35,30 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
 
     private fun necHexToPattern(hex: String): IntArray {
         val cleanHex = hex.replace("0x", "").replace(" ", "")
-        val code = cleanHex.toLong(16)
-        val bits = mutableListOf<Int>()
 
-        // NEC carrier frequency = 38kHz, period ≈ 26.3µs
-        // Pulse = 562.5µs → ~21 pulses of 26.3µs → 21 * 26.3 ≈ 562.5µs
-        // But ConsumerIrManager uses microsecond timing
-
-        // NEC leader: 9000µs burst, 4500µs space
-        bits.addAll(listOf(9000, 4500))
-
-        // 32 bits: address (16), command (16)
-        // NEC sends LSB first
-        for (i in 0 until 32) {
-            val bit = ((code shr i) and 1L).toInt()
-            bits.add(562) // carrier burst
-            bits.add(if (bit == 1) 1687 else 562) // space
+        // Expand 24-bit (6 hex chars) to full 32-bit NEC:
+        // Format: AAAA CCCC ~CCCC → AAAA ~AAAA CCCC ~CCCC
+        val fullHex = if (cleanHex.length == 6) {
+            val addr = cleanHex.substring(0, 2)
+            val cmd = cleanHex.substring(2, 4)
+            val cmdInv = cleanHex.substring(4, 6)
+            val addrInv = String.format("%02X", addr.toInt(16) xor 0xFF)
+            addr + addrInv + cmd + cmdInv
+        } else {
+            cleanHex
         }
 
-        // End burst
+        val code = fullHex.toLong(16)
+        val bits = mutableListOf<Int>()
+
+        bits.addAll(listOf(9000, 4500))
+
+        for (i in 0 until 32) {
+            val bit = ((code shr i) and 1L).toInt()
+            bits.add(562)
+            bits.add(if (bit == 1) 1687 else 562)
+        }
+
         bits.add(562)
 
         return bits.toIntArray()

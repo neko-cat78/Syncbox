@@ -25,7 +25,16 @@ class JackIRTransmitter : IRTransmitter {
 
     private fun generatePcm(hex: String): ShortArray {
         val cleanHex = hex.replace("0x", "").replace(" ", "")
-        val code = cleanHex.toLong(16)
+        val fullHex = if (cleanHex.length == 6) {
+            val addr = cleanHex.substring(0, 2)
+            val cmd = cleanHex.substring(2, 4)
+            val cmdInv = cleanHex.substring(4, 6)
+            val addrInv = String.format("%02X", addr.toInt(16) xor 0xFF)
+            addr + addrInv + cmd + cmdInv
+        } else {
+            cleanHex
+        }
+        val code = fullHex.toLong(16)
         val pcm = mutableListOf<Short>()
 
         fun carrier(durationUs: Int): List<Short> {
