@@ -8,27 +8,12 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
     private val irManager: ConsumerIrManager? =
         context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
 
-    private val carrierFreq: Int
-
-    init {
-        val ranges = irManager?.carrierFrequencyRange
-        carrierFreq = if (!ranges.isNullOrEmpty()) {
-            val r = ranges.first()
-            val minFreq = r.minFrequency
-            val maxFreq = r.maxFrequency
-            if (minFreq <= 38000 && maxFreq >= 38000) 38000
-            else (minFreq + maxFreq) / 2
-        } else {
-            38000
-        }
-    }
-
     override fun transmit(hexCode: String) {
         val ir = irManager ?: return
         if (!ir.hasIrEmitter()) return
 
         val pattern = necHexToPattern(hexCode)
-        ir.transmit(carrierFreq, pattern)
+        ir.transmit(38000, pattern)
     }
 
     override fun isAvailable(): Boolean {
@@ -38,8 +23,6 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
     private fun necHexToPattern(hex: String): IntArray {
         val cleanHex = hex.replace("0x", "").replace(" ", "")
 
-        // Expand 24-bit (6 hex chars) to full 32-bit NEC:
-        // Format: AAAA CCCC ~CCCC → AAAA ~AAAA CCCC ~CCCC
         val fullHex = if (cleanHex.length == 6) {
             val addr = cleanHex.substring(0, 2)
             val cmd = cleanHex.substring(2, 4)
