@@ -6,13 +6,13 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.sin
 
 class JackIRTransmitter : IRTransmitter {
 
     private val scope = CoroutineScope(Dispatchers.IO)
-    private val carrierFreq = 38000
-    private val sampleRate = 192000
-    private val halfCycleSamples = sampleRate / carrierFreq / 2
+    private val sampleRate = 48000
 
     override fun transmit(hexCode: String) {
         scope.launch {
@@ -25,48 +25,58 @@ class JackIRTransmitter : IRTransmitter {
 
     private fun generatePcm(hex: String): ShortArray {
         val cleanHex = hex.replace("0x", "").replace(" ", "")
-        val fullHex = if (cleanHex.length == 6) {
-            val addr = cleanHex.substring(0, 2)
-            val cmd = cleanHex.substring(2, 4)
-            val cmdInv = cleanHex.substring(4, 6)
-            val addrInv = String.format("%02X", addr.toInt(16) xor 0xFF)
-            addr + addrInv + cmd + cmdInv
-        } else {
-            cleanHex
-        }
-        val code = fullHex.toLong(16)
-        val pcm = mutableListOf<Short>()
+        val padded = cleanHex.padStart(8, '0')
+        val code = padded.toLong(16)
 
-        fun carrier(durationUs: Int): List<Short> {
-            val count = (sampleRate * durationUs / 1_000_000L).toInt()
-            val buffer = mutableListOf<Short>()
-            var phase = 0
-            for (i in 0 until count) {
-                val value = if (phase < halfCycleSamples) Short.MAX_VALUE else Short.MIN_VALUE
-                buffer.add(value)
-                phase++
-                if (phase >= halfCycleSamples * 2) phase = 0
-            }
-            return buffer
-        }
-
-        fun space(durationUs: Int): List<Short> {
-            val count = (sampleRate * durationUs / 1_000_000L).toInt()
-            return List(count) { 0 }
-        }
-
-        pcm.addAll(carrier(9000))
-        pcm.addAll(space(4500))
-
-        for (i in 0 until 32) {
+        // Build NEC pattern (microsecond timings) MSB-first
+        val patternUs = mutableListOf<Int>()
+        patternUs.add(9000)
+        patternUs.add(4500)
+        for (i in 31 downTo 0) {
             val bit = ((code shr i) and 1L).toInt()
-            pcm.addAll(carrier(562))
-            pcm.addAll(space(if (bit == 1) 1687 else 562))
+            patternUs.add(560)
+            patternUs.add(if (bit == 1) 1690 else 560)
+        }
+        patternUs.add(560)
+
+        // Convert to PCM: sine wave at carrierHz/2 during ON periods, silence during OFF
+        val carrierHz = 38000
+        val toneHz = carrierHz / 2
+        val phaseInc = (toneHz.toDouble() * 2.0 * PI) / sampleRate.toDouble()
+
+        var totalFrames = 0L
+        for (d in patternUs) {
+            totalFrames += (d.toLong() * sampleRate) / 1_000_000L
+        }
+        val totalSamples = totalFrames.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val pcm = ShortArray(totalSamples)
+
+        var idx = 0
+        var on = true
+        for (d in patternUs) {
+            val frames = (d.toLong() * sampleRate / 1_000_000L).toInt()
+            if (frames <= 0) {
+                on = !on
+                continue
+            }
+            if (on) {
+                var phase = 0.0
+                for (i in 0 until frames) {
+                    if (idx >= totalSamples) break
+                    pcm[idx++] = (sin(phase) * 32000.0).toInt().toShort()
+                    phase += phaseInc
+                    if (phase >= 2.0 * PI) phase -= 2.0 * PI
+                }
+            } else {
+                for (i in 0 until frames) {
+                    if (idx >= totalSamples) break
+                    pcm[idx++] = 0
+                }
+            }
+            on = !on
         }
 
-        pcm.addAll(carrier(562))
-
-        return pcm.toShortArray()
+        return pcm
     }
 
     private fun playPcm(pcm: ShortArray) {
@@ -98,7 +108,7 @@ class JackIRTransmitter : IRTransmitter {
             track.play()
 
             val durationMs = (pcm.size.toLong() * 1000) / sampleRate
-            Thread.sleep(durationMs + 50)
+            Thread.sleep(durationMs + 200)
             track.stop()
         } finally {
             track.release()

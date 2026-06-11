@@ -22,29 +22,24 @@ class BuiltInIRTransmitter(context: Context) : IRTransmitter {
 
     private fun necHexToPattern(hex: String): IntArray {
         val cleanHex = hex.replace("0x", "").replace(" ", "")
+        val padded = cleanHex.padStart(8, '0')
+        val code = padded.toLong(16)
 
-        val fullHex = if (cleanHex.length == 6) {
-            val addr = cleanHex.substring(0, 2)
-            val cmd = cleanHex.substring(2, 4)
-            val cmdInv = cleanHex.substring(4, 6)
-            val addrInv = String.format("%02X", addr.toInt(16) xor 0xFF)
-            addr + addrInv + cmd + cmdInv
-        } else {
-            cleanHex
-        }
-
-        val code = fullHex.toLong(16)
         val bits = mutableListOf<Int>()
 
-        bits.addAll(listOf(9000, 4500))
+        // NEC leader: 9000µs burst, 4500µs space
+        bits.add(9000)
+        bits.add(4500)
 
-        for (i in 0 until 32) {
+        // 32 bits MSB-first
+        for (i in 31 downTo 0) {
             val bit = ((code shr i) and 1L).toInt()
-            bits.add(562)
-            bits.add(if (bit == 1) 1687 else 562)
+            bits.add(560)
+            bits.add(if (bit == 1) 1690 else 560)
         }
 
-        bits.add(562)
+        // End burst
+        bits.add(560)
 
         return bits.toIntArray()
     }
